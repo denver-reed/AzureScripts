@@ -1,0 +1,181 @@
+{
+  "mode": "All",
+  "policyRule": {
+    "if": {
+      "field": "type",
+      "equals": "Microsoft.Resources/subscriptions"
+    },
+    "then": {
+      "effect": "deployIfNotExists",
+      "details": {
+        "type": "Microsoft.Security/securityContacts",
+        "existenceScope": "subscription",
+        "existenceCondition": {
+          "allOf": [
+            {
+              "field": "Microsoft.Security/securityContacts/emails",
+              "equals": "[parameters('securityEmail')]"
+            },
+            {
+              "field": "Microsoft.Security/securityContacts/notificationsByRole.state",
+              "equals": "On"
+            },
+            {
+              "count": {
+                "field": "Microsoft.Security/securityContacts/notificationsSources[*]",
+                "where": {
+                  "allOf": [
+                    {
+                      "field": "Microsoft.Security/securityContacts/notificationsSources[*].sourceType",
+                      "equals": "Alert"
+                    },
+                    {
+                      "field": "Microsoft.Security/securityContacts/notificationsSources[*].Alert.minimalSeverity",
+                      "equals": "[parameters('alertSeverity')]"
+                    }
+                  ]
+                }
+              },
+              "equals": 1
+            },
+            {
+              "count": {
+                "field": "Microsoft.Security/securityContacts/notificationsSources[*]",
+                "where": {
+                  "allOf": [
+                    {
+                      "field": "Microsoft.Security/securityContacts/notificationsSources[*].sourceType",
+                      "equals": "AttackPath"
+                    },
+                    {
+                      "field": "Microsoft.Security/securityContacts/notificationsSources[*].AttackPath.minimalRiskLevel",
+                      "equals": "[parameters('attackPathSeverity')]"
+                    }
+                  ]
+                }
+              },
+              "equals": 1
+            }
+          ]
+        },
+        "roleDefinitionIds": [
+          "/providers/Microsoft.Authorization/roleDefinitions/fb1c8493-542b-48eb-b624-b4c8fea62acd"
+        ],
+        "deployment": {
+          "location": "eastus",
+          "properties": {
+            "mode": "incremental",
+            "template": {
+              "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+              "contentVersion": "1.0.0.0",
+              "parameters": {
+                "securityEmail": {
+                  "type": "string"
+                },
+                "alertSeverity": {
+                  "type": "string"
+                },
+                "attackPathSeverity": {
+                  "type": "string"
+                },
+                "notificationRoles": {
+                  "type": "array"
+                }
+              },
+              "resources": [
+                {
+                  "type": "Microsoft.Security/securityContacts",
+                  "apiVersion": "2023-12-01-preview",
+                  "name": "default",
+                  "properties": {
+                    "emails": "[parameters('securityEmail')]",
+                    "phone": "",
+                    "isEnabled": true,
+                    "notificationsByRole": {
+                      "state": "On",
+                      "roles": "[parameters('notificationRoles')]"
+                    },
+                    "notificationsSources": [
+                      {
+                        "sourceType": "Alert",
+                        "minimalSeverity": "[parameters('alertSeverity')]"
+                      },
+                      {
+                        "sourceType": "AttackPath",
+                        "minimalRiskLevel": "[parameters('attackPathSeverity')]"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "parameters": {
+              "securityEmail": {
+                "value": "[parameters('securityEmail')]"
+              },
+              "alertSeverity": {
+                "value": "[parameters('alertSeverity')]"
+              },
+              "attackPathSeverity": {
+                "value": "[parameters('attackPathSeverity')]"
+              },
+              "notificationRoles": {
+                "value": "[parameters('notificationRoles')]"
+              }
+            }
+          }
+        },
+        "deploymentScope": "subscription"
+      }
+    }
+  },
+  "parameters": {
+    "securityEmail": {
+      "type": "String",
+      "metadata": {
+        "displayName": "Security contact email - for multiple, separate by ;"
+      }
+    },
+    "alertSeverity": {
+      "type": "String",
+      "metadata": {
+        "displayName": "Alert notification severity",
+        "description": "The minimal alert severity which will be sent as email notifications"
+      },
+      "allowedValues": [
+        "High",
+        "Medium",
+        "Low"
+      ],
+      "defaultValue": "High"
+    },
+    "attackPathSeverity": {
+      "type": "String",
+      "metadata": {
+        "displayName": "Attack path notification risk level",
+        "description": "The minimal risk level for attack path notifications"
+      },
+      "allowedValues": [
+        "Critical",
+        "High",
+        "Medium",
+        "Low"
+      ],
+      "defaultValue": "Critical"
+    },
+    "notificationRoles": {
+      "type": "Array",
+      "metadata": {
+        "displayName": "Notification roles",
+        "description": "The roles that will receive email notifications"
+      },
+      "allowedValues": [
+        "Owner",
+        "AccountAdmin",
+        "ServiceAdmin",
+        "Contributor"
+      ],
+      "defaultValue": ["Owner"]
+    }
+  }
+}
