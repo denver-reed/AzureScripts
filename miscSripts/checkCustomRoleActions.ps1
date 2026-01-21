@@ -131,6 +131,52 @@ function Test-RoleActions {
         }
     }
     
+    # Check DataActions
+    if ($RoleDefinition.DataActions) {
+        Write-Host "`nChecking $($RoleDefinition.DataActions.Count) DataActions..." -ForegroundColor Yellow
+        
+        foreach ($dataAction in $RoleDefinition.DataActions) {
+            if (Test-ActionValidity -Action $dataAction -ProviderOperations $ProviderOperations) {
+                $validActions += $dataAction
+                if ($ShowDetails) {
+                    Write-Host "  VALID DataAction: $dataAction" -ForegroundColor Green
+                }
+            } else {
+                $invalidActions += $dataAction
+                Write-Warning "  INVALID DataAction: $dataAction"
+            }
+        }
+        
+        if (-not $ShowDetails) {
+            Write-Host "  Found $($($RoleDefinition.DataActions | Where-Object { Test-ActionValidity -Action $_ -ProviderOperations $ProviderOperations }).Count) valid data actions" -ForegroundColor Green
+            $invalidDataCount = ($RoleDefinition.DataActions | Where-Object { -not (Test-ActionValidity -Action $_ -ProviderOperations $ProviderOperations) }).Count
+            if ($invalidDataCount -gt 0) {
+                Write-Host "  Found $invalidDataCount invalid data actions" -ForegroundColor Red
+            }
+        }
+    }
+    
+    # Check NotDataActions
+    if ($RoleDefinition.NotDataActions) {
+        Write-Host "`nChecking $($RoleDefinition.NotDataActions.Count) NotDataActions..." -ForegroundColor Yellow
+        
+        $invalidNotDataActions = @()
+        foreach ($notDataAction in $RoleDefinition.NotDataActions) {
+            if (Test-ActionValidity -Action $notDataAction -ProviderOperations $ProviderOperations) {
+                if ($ShowDetails) {
+                    Write-Host "  VALID NotDataAction: $notDataAction" -ForegroundColor Green
+                }
+            } else {
+                $invalidNotDataActions += $notDataAction
+                Write-Warning "  INVALID NotDataAction: $notDataAction"
+            }
+        }
+        
+        if (-not $ShowDetails -and $invalidNotDataActions.Count -eq 0) {
+            Write-Host "  All NotDataActions are valid" -ForegroundColor Green
+        }
+    }
+    
     # Summary for this role
     Write-Host "`nSummary for $($RoleDefinition.Name):" -ForegroundColor Magenta
     Write-Host "  Valid Actions: $($validActions.Count)" -ForegroundColor Green
