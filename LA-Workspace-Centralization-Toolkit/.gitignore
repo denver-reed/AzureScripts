@@ -1,0 +1,5 @@
+# Customer inventory output contains Azure resource and operational data.
+la-customer-inventory-*/
+
+# Generated offline validation report.
+validation.json
